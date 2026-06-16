@@ -50,7 +50,7 @@ REGION_DOC_URL=https://docs.zilliz.com/docs/cloud-providers-and-regions
 DOC_UPDATE_MODE=dry-run
 ```
 
-Use `DOC_UPDATE_MODE=dry-run` for the first real group test. Switch to `DOC_UPDATE_MODE=cli` only after the message flow is verified on a machine that has `lark-cli` authenticated.
+Use `DOC_UPDATE_MODE=dry-run` for the first real group test. Switch to `DOC_UPDATE_MODE=cli` only after the message flow is verified on a machine that has `lark-cli` authenticated and can access the target docs.
 
 ## 5. Run Locally
 
@@ -111,14 +111,16 @@ This feature is available in all AWS regions and in the following Google Cloud r
 将更新以下文档：
 - Global Cluster Explained
 
-回复 ok 后我会自动插入。
+回复 ok ABC123 后我会自动插入。
 ```
 
-Then reply:
+Then reply with the exact confirmation code shown by the bot:
 
 ```text
-ok
+ok ABC123
 ```
+
+The confirmation code changes for each draft. A plain `ok` does not write anything.
 
 With `DOC_UPDATE_MODE=dry-run`, the bot should report that no docs were updated because dry-run mode is enabled.
 
@@ -133,10 +135,18 @@ DOC_UPDATE_MODE=cli
 Then confirm that the runtime environment has:
 
 ```bash
-lark-cli docs +fetch --api-version v2 --doc "<target-doc-url>"
+lark-cli docs +fetch --api-version v2 --as bot --doc "<target-doc-url>"
 ```
 
 working with write access.
+
+If `lark-cli` fails with `keychain not initialized` in a macOS automation environment, run:
+
+```bash
+lark-cli config keychain-downgrade
+```
+
+In CLI mode, callouts are inserted below the document title. If the title block cannot be found, the bot falls back to the first heading and then to appending at the end.
 
 ## 9. Deploy With Docker
 
