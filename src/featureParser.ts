@@ -1,6 +1,6 @@
 const triggerPatterns = [
-  /已更新\s+(.+?)\s+功能支持情况/i,
-  /同步\s+(.+?)\s+功能支持情况/i,
+  /已更新\s+(.+?)\s*功能支持情况/i,
+  /同步\s+(.+?)\s*功能支持情况/i,
   /sync\s+(.+?)\s+(availability|feature availability)/i
 ];
 
