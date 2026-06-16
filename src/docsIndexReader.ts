@@ -176,7 +176,7 @@ function parseRelatedDocFromRecord(
   }
 
   const placementType = row[placementTypeIndex];
-  if (Array.isArray(placementType) && placementType.includes("section")) {
+  if (!isCanonicalPlacement(placementType)) {
     return null;
   }
 
@@ -224,6 +224,10 @@ function dedupeDocs(docs: RelatedDoc[]): RelatedDoc[] {
 
 function dedupeStrings(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
+}
+
+function isCanonicalPlacement(value: string | string[] | null | undefined): boolean {
+  return Array.isArray(value) && value.length > 0 && value.every((item) => item === "canonical");
 }
 
 function sleep(ms: number): Promise<void> {

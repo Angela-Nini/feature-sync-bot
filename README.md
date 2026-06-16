@@ -41,7 +41,7 @@ The bot currently recognizes messages like:
 @Angela sync Cross-region backup availability
 ```
 
-The feature name must exist in the Source of Truth docs. Related docs are discovered from the docs index Base by matching `Docs`, `Slug`, `Alias1`, `Alias2`, `Keywords`, and `Labels`.
+The feature name must exist in the Source of Truth docs. Related docs are discovered from the docs index Base by matching `Docs`, `Slug`, `Alias1`, `Alias2`, `Keywords`, and `Labels`. Only records with `Placement Type=canonical` are considered writable targets.
 
 ## Callout Behavior
 
