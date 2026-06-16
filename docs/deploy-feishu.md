@@ -13,6 +13,9 @@ im:message.p2p_msg:readonly
 docx:document:read
 docx:document:write
 wiki:wiki:read
+base:app:read
+base:table:read
+base:record:read
 ```
 
 If the developer console prompts for a group-message read scope when subscribing to `im.message.receive_v1`, enable that scope too.
@@ -31,8 +34,10 @@ Add the app bot to the Feishu group where you want to test:
 
 Make sure the bot can access:
 
-- Source of truth: `https://zilliverse.feishu.cn/wiki/TT8owSPZhiot7IkeNYrcrvobnPe`
-- Related docs listed in the source-of-truth table
+- Plan source of truth: `https://zilliverse.feishu.cn/wiki/YQXxwvmJViX3YxkwvWVcguvgntU`
+- Region source of truth: `https://zilliverse.feishu.cn/wiki/VodrwqdGaiTxakk24rAcqw7LnIh`
+- Docs index Base: `https://zilliverse.feishu.cn/base/Ac7xbs2k1ad7bjsCXr0ccHe9nMh`
+- Related docs that the bot will update
 
 For MVP testing, add the bot as a collaborator with edit permission.
 
@@ -44,7 +49,10 @@ HOST=0.0.0.0
 LARK_APP_ID=cli_aaa8c4b52f79dbcb
 LARK_APP_SECRET=<your-app-secret>
 LARK_VERIFICATION_TOKEN=<event-subscription-verification-token>
-SOURCE_OF_TRUTH_DOC=https://zilliverse.feishu.cn/wiki/TT8owSPZhiot7IkeNYrcrvobnPe?from=from_copylink
+PLAN_SOURCE_OF_TRUTH_DOC=https://zilliverse.feishu.cn/wiki/YQXxwvmJViX3YxkwvWVcguvgntU?from=from_copylink
+REGION_SOURCE_OF_TRUTH_DOC=https://zilliverse.feishu.cn/wiki/VodrwqdGaiTxakk24rAcqw7LnIh?from=from_copylink
+DOCS_INDEX_BASE_TOKEN=Ac7xbs2k1ad7bjsCXr0ccHe9nMh
+DOCS_INDEX_IDENTITY=bot
 PLAN_DOC_URL=https://docs.zilliz.com/docs/select-zilliz-cloud-service-plans
 REGION_DOC_URL=https://docs.zilliz.com/docs/cloud-providers-and-regions
 DOC_UPDATE_MODE=dry-run
@@ -110,6 +118,12 @@ This feature is available in all AWS regions and in the following Google Cloud r
 
 将更新以下文档：
 - Global Cluster Explained
+- Create Global Cluster
+- Connect to Global Cluster
+- Switchover and Failover
+- Scale Global Cluster
+- Monitor Global Cluster
+- Manage Global Cluster
 
 回复 ok ABC123 后我会自动插入。
 ```
@@ -147,6 +161,8 @@ lark-cli config keychain-downgrade
 ```
 
 In CLI mode, callouts are inserted below the document title. If the title block cannot be found, the bot falls back to the first heading and then to appending at the end.
+
+If Base reads fail with `91403` under `--as bot`, the app may still be missing Base scopes or the docs index Base may not be shared with the bot.
 
 ## 9. Deploy With Docker
 

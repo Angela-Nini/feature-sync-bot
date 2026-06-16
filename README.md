@@ -1,14 +1,15 @@
 # Feature Sync Bot
 
-Feature Sync Bot is a Feishu bot for syncing Zilliz Cloud feature availability notes from a source-of-truth matrix into related documentation pages.
+Feature Sync Bot is a Feishu bot for syncing Zilliz Cloud feature availability notes into related documentation pages.
 
-The bot listens to group messages, reads the Zilliz Cloud feature matrix, generates Plan Availability and Region Availability callouts, asks for an explicit confirmation code, and then inserts the callouts into the related Feishu docs.
+The bot listens to group messages, reads plan and region availability from two Feishu docs, discovers related docs from a Feishu Base, generates Plan Availability and Region Availability callouts, asks for an explicit confirmation code, and then inserts the callouts into the related Feishu docs.
 
 ## Workflow
 
 ```text
 @Angela 已更新 Global Cluster 功能支持情况
-  -> bot reads the Source of Truth matrix
+  -> bot reads plan and region availability from the Source of Truth docs
+  -> bot scans the docs index Base for related documentation pages
   -> bot finds the feature's plan and region availability
   -> bot generates availability callout drafts
   -> bot replies with target docs and a one-time confirmation code
@@ -40,7 +41,7 @@ The bot currently recognizes messages like:
 @Angela sync Cross-region backup availability
 ```
 
-The feature name must exist in the Source of Truth matrix. Related docs must be listed in the matrix if you want the bot to write the generated callouts.
+The feature name must exist in the Source of Truth docs. Related docs are discovered from the docs index Base by matching `Docs`, `Slug`, `Alias1`, `Alias2`, `Keywords`, and `Labels`.
 
 ## Callout Behavior
 
@@ -85,7 +86,10 @@ LARK_APP_SECRET=replace_with_your_app_secret
 LARK_VERIFICATION_TOKEN=replace_with_event_subscription_verification_token
 LARK_ENCRYPT_KEY=
 
-SOURCE_OF_TRUTH_DOC=https://zilliverse.feishu.cn/wiki/TT8owSPZhiot7IkeNYrcrvobnPe?from=from_copylink
+PLAN_SOURCE_OF_TRUTH_DOC=https://zilliverse.feishu.cn/wiki/YQXxwvmJViX3YxkwvWVcguvgntU?from=from_copylink
+REGION_SOURCE_OF_TRUTH_DOC=https://zilliverse.feishu.cn/wiki/VodrwqdGaiTxakk24rAcqw7LnIh?from=from_copylink
+DOCS_INDEX_BASE_TOKEN=Ac7xbs2k1ad7bjsCXr0ccHe9nMh
+DOCS_INDEX_IDENTITY=bot
 SOURCE_OF_TRUTH_FIXTURE_PATH=
 
 PLAN_DOC_URL=https://docs.zilliz.com/docs/select-zilliz-cloud-service-plans
@@ -113,9 +117,14 @@ im:message.p2p_msg:readonly
 docx:document:read
 docx:document:write
 wiki:wiki:read
+base:app:read
+base:table:read
+base:record:read
 ```
 
 Keep event encryption disabled unless encrypted-event handling is implemented.
+
+The docs index Base must also be shared with the bot identity if you want Base lookups to run as `bot`. In local development, the service can fall back to `user` for Base reads when bot access is denied.
 
 ## Preview Generated Content
 
@@ -161,4 +170,3 @@ npm run preview -- "Global Cluster"
 ## Deployment Notes
 
 See [docs/deploy-feishu.md](docs/deploy-feishu.md) for the step-by-step Feishu group test flow.
-

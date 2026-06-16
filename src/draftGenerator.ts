@@ -26,7 +26,7 @@ export function generateDraftBlocks(feature: FeatureAvailability): DraftBlock[] 
   return blocks;
 }
 
-export function renderDraftMessage(feature: string, blocks: DraftBlock[], targetDocs: string[], confirmationCode: string): string {
+export function renderDraftMessage(feature: string, blocks: DraftBlock[], targetDocs: string[], confirmationCode?: string): string {
   const renderedBlocks = blocks
     .map((block) => `[${block.title}]\n${block.body}`)
     .join("\n\n");
@@ -43,7 +43,9 @@ export function renderDraftMessage(feature: string, blocks: DraftBlock[], target
     "将更新以下文档：",
     renderedDocs,
     "",
-    `回复 ok ${confirmationCode} 后我会自动插入。`
+    confirmationCode
+      ? `回复 ok ${confirmationCode} 后我会自动插入。`
+      : "未找到可更新的相关文档。"
   ].join("\n");
 }
 
@@ -66,9 +68,7 @@ function planSentence(plan: NonNullable<FeatureAvailability["plan"]>): string {
 
   if (isSupported(plan.standardSaas)) supported.push("Standard (SaaS)");
   if (isSupported(plan.enterpriseSaas)) supported.push("Enterprise (SaaS)");
-  if (isSupported(plan.businessCriticalAndByoc)) {
-    supported.push("Business Critical (SaaS) and BYOC deployments");
-  }
+  supported.push(...resolveBusinessCriticalAndByocSupport(plan.businessCriticalAndByoc));
 
   if (supported.length === 0) {
     return "This feature is not available on the listed Zilliz Cloud plans.";
@@ -126,6 +126,28 @@ function appendRegionSupport(parts: string[], unavailable: string[], cloudName: 
 
 function isSupported(value: string): boolean {
   return value.includes(CHECK) && !value.includes(CROSS);
+}
+
+function resolveBusinessCriticalAndByocSupport(value: string): string[] {
+  const supported: string[] = [];
+  const businessCriticalMatch = value.match(/Business Critical:\s*(✅|❌)/i);
+  const byocMatch = value.match(/BYOC:\s*(✅|❌)/i);
+
+  if (businessCriticalMatch || byocMatch) {
+    if (businessCriticalMatch?.[1] === CHECK) {
+      supported.push("Business Critical (SaaS)");
+    }
+    if (byocMatch?.[1] === CHECK) {
+      supported.push("BYOC deployments");
+    }
+    return supported;
+  }
+
+  if (isSupported(value)) {
+    supported.push("Business Critical (SaaS)", "BYOC deployments");
+  }
+
+  return supported;
 }
 
 function joinEnglishList(items: string[]): string {

@@ -109,6 +109,12 @@ async function handleMessageEvent(payload: MessageEvent): Promise<void> {
 
   const draftBlocks = generateDraftBlocks(feature);
   const targetDocTitles = feature.relatedDocs.map((doc) => doc.title);
+  if (targetDocTitles.length === 0) {
+    const reply = renderDraftMessage(feature.feature, draftBlocks, targetDocTitles);
+    await replyToMessage(message.messageId, reply);
+    return;
+  }
+
   const jobId = crypto.randomUUID();
   const jobConfirmationCode = createConfirmationCode(jobId);
   const reply = renderDraftMessage(feature.feature, draftBlocks, targetDocTitles, jobConfirmationCode);
