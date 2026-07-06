@@ -2,7 +2,7 @@
 
 Feature Sync Bot is a Feishu bot for syncing Zilliz Cloud feature availability notes into related documentation pages.
 
-The bot listens to group messages, reads plan and region availability from two Feishu docs, discovers related docs from a Feishu Base, generates Plan Availability and Region Availability callouts, asks for an explicit confirmation code, and then inserts the callouts into the related Feishu docs.
+The bot listens to group messages, reads plan and region availability from two Feishu docs, discovers related docs from a Feishu Base, generates plain-text `FeatureNote` snippets, asks for an explicit confirmation code, and then inserts the snippets into the related Feishu docs.
 
 ## Workflow
 
@@ -11,10 +11,10 @@ The bot listens to group messages, reads plan and region availability from two F
   -> bot reads plan and region availability from the Source of Truth docs
   -> bot scans the docs index Base for related documentation pages
   -> bot finds the feature's plan and region availability
-  -> bot generates availability callout drafts
+  -> bot generates FeatureNote drafts
   -> bot replies with target docs and a one-time confirmation code
   -> user replies ok <confirmation-code>
-  -> bot inserts the callouts into related docs
+  -> bot inserts the FeatureNote snippets into related docs
 ```
 
 Example confirmation:
@@ -43,14 +43,30 @@ The bot currently recognizes messages like:
 
 The feature name must exist in the Source of Truth docs. Related docs are discovered from the docs index Base by matching `Docs`, `Slug`, `Alias1`, `Alias2`, `Keywords`, and `Labels`. Only records with `Placement Type=canonical` are considered writable targets.
 
-## Callout Behavior
+## Generated Content
 
 The bot generates:
 
 - `Plan Availability` when the feature is not available on all listed plans.
 - `Region Availability` when the feature is not available in all listed cloud regions.
 
-Each callout title is rendered as normal paragraph text with a link, not as a heading. In CLI write mode, callouts are inserted directly below the Feishu document title. If the title block cannot be found, the bot falls back to the first heading, then to appending at the end.
+Instead of Feishu callout blocks, the bot now inserts escaped plain-text snippets like:
+
+```txt
+<FeatureNote variant="plan" titleHref="/docs/select-zilliz-cloud-service-plans">
+This feature is available only on Business Critical (SaaS) and BYOC deployments.
+</FeatureNote>
+```
+
+and:
+
+```txt
+<FeatureNote variant="region" titleHref="/docs/cloud-providers-and-regions">
+This feature is available in all AWS regions and in the following Google Cloud regions: gcp-us-central1 and gcp-us-east4. It is not available on Microsoft Azure.
+</FeatureNote>
+```
+
+In CLI write mode, these snippets are inserted directly below the Feishu document title. If the title block cannot be found, the bot falls back to the first heading, then to appending at the end.
 
 ## Setup
 
@@ -94,6 +110,8 @@ SOURCE_OF_TRUTH_FIXTURE_PATH=
 
 PLAN_DOC_URL=https://docs.zilliz.com/docs/select-zilliz-cloud-service-plans
 REGION_DOC_URL=https://docs.zilliz.com/docs/cloud-providers-and-regions
+PLAN_TITLE_HREF=/docs/select-zilliz-cloud-service-plans
+REGION_TITLE_HREF=/docs/cloud-providers-and-regions
 
 DOC_UPDATE_MODE=dry-run
 ```

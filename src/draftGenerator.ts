@@ -9,16 +9,16 @@ export function generateDraftBlocks(feature: FeatureAvailability): DraftBlock[] 
 
   if (feature.plan && hasPlanRestriction(feature.plan)) {
     blocks.push({
-      title: "Plan Availability",
-      titleUrl: config.PLAN_DOC_URL,
+      variant: "plan",
+      titleHref: config.PLAN_TITLE_HREF,
       body: planSentence(feature.plan)
     });
   }
 
   if (feature.region && hasRegionRestriction(feature.region)) {
     blocks.push({
-      title: "Region Availability",
-      titleUrl: config.REGION_DOC_URL,
+      variant: "region",
+      titleHref: config.REGION_TITLE_HREF,
       body: regionSentence(feature.region)
     });
   }
@@ -28,7 +28,7 @@ export function generateDraftBlocks(feature: FeatureAvailability): DraftBlock[] 
 
 export function renderDraftMessage(feature: string, blocks: DraftBlock[], targetDocs: string[], confirmationCode?: string): string {
   const renderedBlocks = blocks
-    .map((block) => `[${block.title}]\n${block.body}`)
+    .map(renderFeatureNoteText)
     .join("\n\n");
 
   const renderedDocs = targetDocs.length > 0
@@ -38,7 +38,7 @@ export function renderDraftMessage(feature: string, blocks: DraftBlock[], target
   return [
     `已根据 Source of truth 生成 ${feature} 的 availability 内容：`,
     "",
-    renderedBlocks || "未发现 plan 或 region 限制，无需生成高亮块。",
+    renderedBlocks || "未发现 plan 或 region 限制，无需生成 FeatureNote。",
     "",
     "将更新以下文档：",
     renderedDocs,
@@ -46,6 +46,14 @@ export function renderDraftMessage(feature: string, blocks: DraftBlock[], target
     confirmationCode
       ? `回复 ok ${confirmationCode} 后我会自动插入。`
       : "未找到可更新的相关文档。"
+  ].join("\n");
+}
+
+export function renderFeatureNoteText(block: DraftBlock): string {
+  return [
+    `<FeatureNote variant="${block.variant}" titleHref="${block.titleHref}">`,
+    block.body,
+    `</FeatureNote>`
   ].join("\n");
 }
 

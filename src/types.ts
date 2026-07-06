@@ -24,8 +24,8 @@ export type FeatureAvailability = {
 };
 
 export type DraftBlock = {
-  title: "Plan Availability" | "Region Availability";
-  titleUrl: string;
+  variant: "plan" | "region";
+  titleHref: string;
   body: string;
 };
 

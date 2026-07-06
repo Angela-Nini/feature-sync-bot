@@ -160,7 +160,7 @@ If `lark-cli` fails with `keychain not initialized` in a macOS automation enviro
 lark-cli config keychain-downgrade
 ```
 
-In CLI mode, callouts are inserted below the document title. If the title block cannot be found, the bot falls back to the first heading and then to appending at the end.
+In CLI mode, plain-text `FeatureNote` snippets are inserted below the document title. If the title block cannot be found, the bot falls back to the first heading and then to appending at the end.
 
 If Base reads fail with `91403` under `--as bot`, the app may still be missing Base scopes or the docs index Base may not be shared with the bot.
 

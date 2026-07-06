@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { config } from "./config.js";
+import { renderFeatureNoteText } from "./draftGenerator.js";
 import type { DraftBlock, RelatedDoc } from "./types.js";
 
 const execFileAsync = promisify(execFile);
@@ -12,12 +13,7 @@ type UpdateResult = {
 
 // MVP implementation:
 // - dry-run by default.
-// - when DOC_UPDATE_MODE=cli, use local lark-cli to insert XML callout blocks.
-//
-// Recommended production behavior:
-// - If existing Plan Availability / Region Availability blocks exist, replace them.
-// - Otherwise insert after the document title, then fall back to the first heading or the end of the document.
-// - Use Feishu highlight/callout blocks when wiring DocxXML update.
+// - when DOC_UPDATE_MODE=cli, use local lark-cli to insert escaped FeatureNote text blocks.
 export async function updateRelatedDocs(docs: RelatedDoc[], blocks: DraftBlock[]): Promise<UpdateResult> {
   if (blocks.length === 0) {
     return { updated: [], failed: docs.map((doc) => ({ doc, reason: "No availability blocks generated." })) };
@@ -55,7 +51,7 @@ async function updateDocWithLarkCli(doc: RelatedDoc, blocks: DraftBlock[]): Prom
   }
 
   const anchorBlockId = await findAvailabilityInsertAnchorBlockId(docRef);
-  const content = renderCalloutXml(blocks);
+  const content = renderFeatureNoteXml(blocks);
   const command = anchorBlockId ? "block_insert_after" : "append";
   const args = [
     "docs",
@@ -119,13 +115,10 @@ async function findAvailabilityInsertAnchorBlockId(docRef: string): Promise<stri
   return headingMatch?.[1] ?? null;
 }
 
-function renderCalloutXml(blocks: DraftBlock[]): string {
-  return blocks.map((block) => (
-    `<callout emoji="💡" background-color="light-blue" border-color="blue">` +
-    `<p><a href="${escapeXmlAttribute(block.titleUrl)}">${escapeXmlText(block.title)}</a></p>` +
-    `<p>${escapeXmlText(block.body)}</p>` +
-    `</callout>`
-  )).join("");
+function renderFeatureNoteXml(blocks: DraftBlock[]): string {
+  return blocks
+    .map((block) => `<p>${escapeXmlText(renderFeatureNoteText(block))}</p>`)
+    .join("");
 }
 
 function escapeXmlText(value: string): string {

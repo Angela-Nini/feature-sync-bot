@@ -15,6 +15,8 @@ const envSchema = z.object({
   SOURCE_OF_TRUTH_FIXTURE_PATH: z.string().optional().default(""),
   PLAN_DOC_URL: z.string().url().optional().default("https://docs.zilliz.com/docs/select-zilliz-cloud-service-plans"),
   REGION_DOC_URL: z.string().url().optional().default("https://docs.zilliz.com/docs/cloud-providers-and-regions"),
+  PLAN_TITLE_HREF: z.string().optional().default("/docs/select-zilliz-cloud-service-plans"),
+  REGION_TITLE_HREF: z.string().optional().default("/docs/cloud-providers-and-regions"),
   DOC_UPDATE_MODE: z.enum(["dry-run", "cli"]).optional().default("dry-run")
 });
 
