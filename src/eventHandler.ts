@@ -1,3 +1,5 @@
+import { prepareRegionJob, confirmRegionJob } from "./regionConfirmation.js";
+import { parseRegionCommand } from "./regionWorkflow.js";
 import crypto from "node:crypto";
 import { assertFeishuEventConfig, config } from "./config.js";
 import { generateDraftBlocks, renderDraftMessage } from "./draftGenerator.js";
@@ -7,6 +9,8 @@ import { replyToMessage } from "./larkClient.js";
 import { readFeatureAvailability } from "./matrixReader.js";
 import { updateRelatedDocs } from "./docUpdater.js";
 import type { PendingJob } from "./types.js";
+
+const seenMessages = new Map<string, number>();
 
 type MessageEvent = {
   event?: {
@@ -53,12 +57,26 @@ export async function handleFeishuEvent(body: unknown): Promise<Record<string, u
   if (payload.header && typeof payload.header === "object") {
     const header = payload.header as Record<string, unknown>;
     assertFeishuEventConfig();
-    if (header.token && header.token !== config.LARK_VERIFICATION_TOKEN) {
+    if (header.token !== config.LARK_VERIFICATION_TOKEN) {
       throw new Error("Invalid event token");
     }
   }
 
-  await handleMessageEvent(payload as MessageEvent);
+  if (!payload.header || typeof payload.header !== "object") {
+    throw new Error("Missing Feishu event header");
+  }
+  const messageId = (payload as MessageEvent).event?.message?.message_id;
+  if (!messageId || seenMessages.has(messageId)) return {};
+  seenMessages.set(messageId, Date.now());
+  for (const [id, time] of seenMessages) {
+    if (Date.now() - time > 24 * 60 * 60 * 1000) seenMessages.delete(id);
+  }
+  // Acknowledge immediately; Feishu retries callbacks that exceed three seconds.
+  setImmediate(() => {
+    void handleMessageEvent(payload as MessageEvent).catch(error => {
+      console.error("Feishu message processing failed:", error instanceof Error ? error.message : String(error));
+    });
+  });
   return {};
 }
 
@@ -68,11 +86,36 @@ async function handleMessageEvent(payload: MessageEvent): Promise<void> {
   if (message.messageType !== "text") return;
 
   const text = parseTextContent(message.content);
+  const regionFeature = parseRegionCommand(text);
+  if (regionFeature) {
+    try {
+      await replyToMessage(message.messageId, `已收到，正在查询 ${regionFeature} 的 CMS 区域信息和相关文档，请稍候。我会先生成预览，只有你回复确认码后才会写入。`);
+      const { message: preview } = await prepareRegionJob(regionFeature, message.chatId, message.userId);
+      // Keep each reply below the text message size limit.
+      for (let offset = 0; offset < preview.length; offset += 6000) {
+        await replyToMessage(message.messageId, preview.slice(offset, offset + 6000));
+      }
+    } catch (error) {
+      await replyToMessage(message.messageId, `Region 预览失败，未写入文档：${error instanceof Error ? error.message : String(error)}`);
+    }
+    return;
+  }
   const confirmationCode = parseConfirmationCode(text);
 
   if (confirmationCode) {
+    await replyToMessage(message.messageId, "已收到确认，正在校验数据和文档版本，请稍候。");
+    const regionResult = await confirmRegionJob(confirmationCode, message.chatId, message.userId);
+    if (regionResult !== null) {
+      for (let offset = 0; offset < regionResult.length; offset += 6000) {
+        await replyToMessage(message.messageId, regionResult.slice(offset, offset + 6000));
+      }
+      return;
+    }
     const job = await findPendingJob(message.chatId, message.userId);
-    if (!job) return;
+    if (!job) {
+      await replyToMessage(message.messageId, "没有找到属于你和当前会话的有效确认码，请重新发送预览指令。");
+      return;
+    }
     if (job.confirmationCode !== confirmationCode) {
       await replyToMessage(message.messageId, `确认码不匹配。请回复 ok ${job.confirmationCode} 来确认 ${job.feature} 的写入。`);
       return;
@@ -101,6 +144,7 @@ async function handleMessageEvent(payload: MessageEvent): Promise<void> {
   const featureName = parseFeatureName(text);
   if (!featureName) return;
 
+  await replyToMessage(message.messageId, `已收到，正在查询 ${featureName} 的功能支持情况和相关文档，请稍候。`);
   const feature = await readFeatureAvailability(featureName);
   if (!feature) {
     await replyToMessage(message.messageId, `我没有在 Source of truth 中找到 “${featureName}”。请检查功能名称。`);

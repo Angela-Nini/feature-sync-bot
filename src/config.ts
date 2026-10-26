@@ -2,6 +2,8 @@ import "dotenv/config";
 import { z } from "zod";
 
 const envSchema = z.object({
+  REGION_WRITES_ENABLED: z.enum(["true", "false"]).default("false").transform(value => value === "true"),
+  CMS_FEATURES_URL: z.string().url().default("https://cms.zilliz.cc/api/cloud-features/md"),
   PORT: z.coerce.number().default(3000),
   HOST: z.string().optional().default("127.0.0.1"),
   LARK_APP_ID: z.string().optional().default(""),

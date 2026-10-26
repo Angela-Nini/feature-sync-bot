@@ -188,3 +188,46 @@ npm run preview -- "Global Cluster"
 ## Deployment Notes
 
 See [docs/deploy-feishu.md](docs/deploy-feishu.md) for the step-by-step Feishu group test flow.
+
+## CMS region workflow
+
+Send `预览 Global Cluster region support` (or `更新` / `同步` / `preview` /
+`update` / `sync` with the same suffix) to generate a region-only proposal.
+The bot immediately acknowledges the message, reads the CMS and all related
+canonical documents, and reports the proposed note, original text and actions.
+No write happens until the initiating user replies `ok <code>` in the same chat
+within 30 minutes. Generate a new preview after upgrading from preview-only mode.
+
+`CMS_FEATURES_URL` defaults to `https://cms.zilliz.cc/api/cloud-features/md`.
+Empty, duplicate or unrecognized data stops the preview. Request-only conditions
+and CMS region identifiers are preserved. The index reader scans every Base
+table, finds an exact feature section and recursively expands Parent descendants
+with pagination. Without an exact section, keyword matches require review.
+
+`REGION_WRITES_ENABLED=false` is the default. Set it to `true` to enable writes
+for confirmed **region** jobs, independently of the legacy `DOC_UPDATE_MODE`.
+Keep `DOC_UPDATE_MODE=dry-run` while testing this new flow so legacy plan updates
+remain disabled. `DOCS_INDEX_IDENTITY=user` uses the current local user's CLI
+access for both preview and confirmed writes. Hosted use needs bot-owned access.
+
+Confirmation codes are scoped to the initiating user/chat and cannot be reused.
+A new preview supersedes an older pending job for that user/chat. The bot checks
+CMS content and all document revisions before writing, then checks each revision
+again immediately before the mutation. Existing three-paragraph region notes
+are updated by replacing only the body paragraph while preserving its inline
+style chain. Missing notes are inserted after the plan note, or after the title.
+Malformed, duplicate, mixed-format or nested notes are rejected for review.
+
+After each write, the bot reads back the note and verifies content outside it
+(including the plan note). Failure stops the remaining writes and reports the
+partial outcome; it never automatically overwrites or rolls back other edits.
+
+Jobs and original document XML snapshots are stored with restricted permissions
+under ignored `data/region-jobs/`. Preserve this directory while testing. Do not
+commit or share these snapshots. An interrupted executing job is not replayed;
+inspect the docs and generate a new preview. This is a single-process local
+service with an in-memory event deduplication cache, not a distributed queue.
+
+Run `npm run preview:region -- "Global Cluster"` for a read-only CLI inspection
+(no confirmation job), and `npm run test:region`, `npm run typecheck`, and
+`npm run build` to validate the implementation.
